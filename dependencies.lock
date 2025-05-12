@@ -54,14 +54,36 @@ dependencies:
     - esp32s3
     - esp32p4
     version: 1.1.2
+  espressif/esp_lvgl_port:
+    component_hash: e720c95cf0667554a204591bb5fade4655fb2990465557041200fa44b5bc7556
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=4.4'
+    - name: lvgl/lvgl
+      registry_url: https://components.espressif.com
+      require: public
+      version: '>=8,<10'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 2.6.0
   idf:
     source:
       type: idf
     version: 5.4.1
+  lvgl/lvgl:
+    component_hash: 096c69af22eaf8a2b721e3913da91918c5e6bf1a762a113ec01f401aa61337a0
+    dependencies: []
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    version: 9.2.2
 direct_dependencies:
 - espressif/esp_lcd_panel_io_additions
 - espressif/esp_lcd_st7701
+- espressif/esp_lvgl_port
 - idf
-manifest_hash: 4fef67c42037f056a4abd523c9fdc123ad5cf83cb0ca63d6cfa4eb0a460a3258
+manifest_hash: 438c6c84e67381cd36dd98e567f61536c6c7c193a153681830c4481856344d81
 target: esp32s3
 version: 2.0.0
