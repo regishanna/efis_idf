@@ -4,6 +4,7 @@
 #include "esp_lcd_panel_io_additions.h"
 
 #include "lv_demos.h"
+#include "lvgl.h"
 
 #include <stdio.h>
 
@@ -56,7 +57,7 @@
 
 
 // LCD settings
-// -----------
+// ------------
 #define LCD_BUFFER_NUMS 2
 
 
@@ -68,7 +69,7 @@ static const st7701_lcd_init_cmd_t lcd_init_cmds[] = {
     {0xFF, (uint8_t []){0x77, 0x01, 0x00, 0x00, 0x10}, 5, 0},
     {0xC0, (uint8_t []){0x3B, 0x00}, 2, 0},
     {0xC1, (uint8_t []){0x10, 0x0C}, 2, 0},
-    {0xC2, (uint8_t []){0x31, 0x0A}, 2, 0},
+    {0xC2, (uint8_t []){0x31, 0x00}, 2, 0},
     {0xC3, (uint8_t []){0x02, 0x00, 0x00}, 3, 0},   // PCLK N
     {0xCC, (uint8_t []){0x10}, 1, 0},
     {0xCD, (uint8_t []){0x08}, 1, 0},
@@ -108,11 +109,10 @@ static const st7701_lcd_init_cmd_t lcd_init_cmds[] = {
     {0xFF, (uint8_t []){0x77, 0x01, 0x00, 0x00, 0x00}, 5, 0},
     {0x11, (uint8_t []){0x00}, 0, 120},
     {0x29, (uint8_t []){0x00}, 0, 25},
-//    {0x35, (uint8_t []){0x00}, 1, 0},
 };    
     
     
-void init_graphics(void)
+static void init_graphics(void)
 {
     // Install 3-wire SPI panel IO
     spi_line_config_t line_config = {
@@ -162,8 +162,8 @@ void init_graphics(void)
             .pclk_hz = 16 * 1000 * 1000,
             .h_res = LCD_H_RES,
             .v_res = LCD_V_RES,
-            .hsync_pulse_width = 8,
-            .hsync_back_porch = 56,
+            .hsync_pulse_width = 10,
+            .hsync_back_porch = 10,
             .hsync_front_porch = 20,
             .vsync_pulse_width = 10,
             .vsync_back_porch = 16,
@@ -202,7 +202,7 @@ void init_graphics(void)
     const lvgl_port_cfg_t lvgl_cfg = ESP_LVGL_PORT_INIT_CONFIG();
     ESP_ERROR_CHECK(lvgl_port_init(&lvgl_cfg));
 
-    /* Add LCD screen */
+    // Add LCD screen
     const lvgl_port_display_cfg_t disp_cfg = {
         .panel_handle = lcd_handle,
         .buffer_size = LCD_H_RES * LCD_V_RES,
@@ -237,11 +237,27 @@ void init_graphics(void)
 }
 
 
+static void display(void)
+{
+    static lv_style_t style;
+    lv_style_init(&style);
+    lv_style_set_bg_color(&style, lv_palette_main(LV_PALETTE_BLUE));
+    lv_style_set_border_color(&style, lv_palette_main(LV_PALETTE_PINK));
+
+    lv_obj_t *obj;
+    obj = lv_obj_create(lv_scr_act());
+    lv_obj_add_style(obj, &style, 0);
+    lv_obj_set_size(obj, LCD_H_RES, LCD_V_RES);
+    lv_obj_align(obj, LV_ALIGN_OUT_TOP_LEFT, 0, 0);
+}
+
+
 void app_main(void)
 {
     init_graphics();
 
     assert(lvgl_port_lock(0) == true);
+    //display();
     lv_demo_music();
     lvgl_port_unlock();
 }
