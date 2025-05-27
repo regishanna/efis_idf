@@ -100,18 +100,21 @@ void display::render_horizon(lv_obj_t *canvas, const lv_img_dsc_t *src_img, int1
         for (int x = 0; x < canvas_w; x++) {
             int dx = x - cx;
 
-            // Rotation : (u, v) = inv(R) * (dx, dy - pitch)
-            int u = (cos_a * dx + sin_a * (dy - pitch_px)) >> 10;
-            int v = (-sin_a * dx + cos_a * (dy - pitch_px)) >> 10;
+            // Roll rotation
+            int u = ((cos_a * dx) + (sin_a * dy)) >> 10;
+            int v = ((-sin_a * dx) + (cos_a * dy)) >> 10;
+
+            // Pitch translation
+            v += pitch_px;
 
             int src_x = sx + u;
             int src_y = sy + v;
 
-            if (src_x >= 0 && src_x < img_w && src_y >= 0 && src_y < img_h) {
-                dst_buf[y * canvas_w + x] = src_buf[src_y * img_w + src_x];
+            if ((src_x >= 0) && (src_x < img_w) && (src_y >= 0) && (src_y < img_h)) {
+                dst_buf[(y * canvas_w) + x] = src_buf[(src_y * img_w) + src_x];
             }
             else {
-                dst_buf[y * canvas_w + x] = {
+                dst_buf[(y * canvas_w) + x] = {
                     .blue = 0,
                     .green = 0,
                     .red = 0

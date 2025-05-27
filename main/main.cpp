@@ -137,7 +137,7 @@ static void init_graphics(void)
     esp_lcd_rgb_panel_config_t rgb_config = {};
 
     rgb_config.clk_src = LCD_CLK_SRC_DEFAULT;
-    rgb_config.psram_trans_align = 64;
+    rgb_config.dma_burst_size = 64;
     rgb_config.data_width = RGB_DATA_WIDTH;
     rgb_config.bits_per_pixel = RGB_BIT_PER_PIXEL;
     rgb_config.num_fbs = LCD_BUFFER_NUMS;
