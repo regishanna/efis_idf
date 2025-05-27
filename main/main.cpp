@@ -1,12 +1,15 @@
+#include "display.h"
+
 #include "driver/gpio.h"
 #include "esp_lvgl_port.h"
 #include "esp_lcd_st7701.h"
 #include "esp_lcd_panel_io_additions.h"
-
-#include "lv_demos.h"
-#include "lvgl.h"
+#include "esp_log.h"
 
 #include <stdio.h>
+
+
+static const char *TAG = "EFIS main";
 
 
 // LCD spec
@@ -130,69 +133,68 @@ static void init_graphics(void)
 
     // Install ST7701 panel driver
     esp_lcd_panel_handle_t lcd_handle = NULL;
-    esp_lcd_rgb_panel_config_t rgb_config = {
-        .clk_src = LCD_CLK_SRC_DEFAULT,
-        .psram_trans_align = 64,
-        .data_width = RGB_DATA_WIDTH,
-        .bits_per_pixel = RGB_BIT_PER_PIXEL,
-        .de_gpio_num = LCD_IO_RGB_DE,
-        .pclk_gpio_num = LCD_IO_RGB_PCLK,
-        .vsync_gpio_num = LCD_IO_RGB_VSYNC,
-        .hsync_gpio_num = LCD_IO_RGB_HSYNC,
-        .disp_gpio_num = LCD_IO_RGB_DISP,
-        .data_gpio_nums = {
-            LCD_IO_RGB_DATA0,
-            LCD_IO_RGB_DATA1,
-            LCD_IO_RGB_DATA2,
-            LCD_IO_RGB_DATA3,
-            LCD_IO_RGB_DATA4,
-            LCD_IO_RGB_DATA5,
-            LCD_IO_RGB_DATA6,
-            LCD_IO_RGB_DATA7,
-            LCD_IO_RGB_DATA8,
-            LCD_IO_RGB_DATA9,
-            LCD_IO_RGB_DATA10,
-            LCD_IO_RGB_DATA11,
-            LCD_IO_RGB_DATA12,
-            LCD_IO_RGB_DATA13,
-            LCD_IO_RGB_DATA14,
-            LCD_IO_RGB_DATA15,
-        },
-        .timings = {
-            .pclk_hz = 16 * 1000 * 1000,
-            .h_res = LCD_H_RES,
-            .v_res = LCD_V_RES,
-            .hsync_pulse_width = 10,
-            .hsync_back_porch = 10,
-            .hsync_front_porch = 20,
-            .vsync_pulse_width = 10,
-            .vsync_back_porch = 16,
-            .vsync_front_porch = 12,
-            .flags.pclk_active_neg = true,
-        },
-        .flags.fb_in_psram = 1,
-        .num_fbs = LCD_BUFFER_NUMS,
-        .bounce_buffer_size_px = RGB_BOUNCE_BUFFER_SIZE,
-    };
-    st7701_vendor_config_t vendor_config = {
-        .rgb_config = &rgb_config,
-        .init_cmds = lcd_init_cmds,
-        .init_cmds_size = sizeof(lcd_init_cmds) / sizeof(lcd_init_cmds[0]),
-        .flags = {
-            .auto_del_panel_io = 0,         /**
-                                             * Set to 1 if panel IO is no longer needed after LCD initialization.
-                                             * If the panel IO pins are sharing other pins of the RGB interface to save GPIOs,
-                                             * Please set it to 1 to release the pins.
-                                             */
-            .mirror_by_cmd = 1,             // Set to 0 if `auto_del_panel_io` is enabled
-        },
-    };
-    const esp_lcd_panel_dev_config_t panel_config = {
-        .reset_gpio_num = LCD_IO_RST,
-        .rgb_ele_order = LCD_RGB_ELEMENT_ORDER_RGB,
-        .bits_per_pixel = LCD_BIT_PER_PIXEL,
-        .vendor_config = &vendor_config,
-    };
+
+    esp_lcd_rgb_panel_config_t rgb_config = {};
+
+    rgb_config.clk_src = LCD_CLK_SRC_DEFAULT;
+    rgb_config.psram_trans_align = 64;
+    rgb_config.data_width = RGB_DATA_WIDTH;
+    rgb_config.bits_per_pixel = RGB_BIT_PER_PIXEL;
+    rgb_config.num_fbs = LCD_BUFFER_NUMS;
+    rgb_config.bounce_buffer_size_px = RGB_BOUNCE_BUFFER_SIZE;
+    rgb_config.de_gpio_num = LCD_IO_RGB_DE;
+    rgb_config.pclk_gpio_num = LCD_IO_RGB_PCLK;
+    rgb_config.vsync_gpio_num = LCD_IO_RGB_VSYNC;
+    rgb_config.hsync_gpio_num = LCD_IO_RGB_HSYNC;
+    rgb_config.disp_gpio_num = LCD_IO_RGB_DISP;
+
+    rgb_config.data_gpio_nums[0] = LCD_IO_RGB_DATA0;
+    rgb_config.data_gpio_nums[1] = LCD_IO_RGB_DATA1;
+    rgb_config.data_gpio_nums[2] = LCD_IO_RGB_DATA2;
+    rgb_config.data_gpio_nums[3] = LCD_IO_RGB_DATA3;
+    rgb_config.data_gpio_nums[4] = LCD_IO_RGB_DATA4;
+    rgb_config.data_gpio_nums[5] = LCD_IO_RGB_DATA5;
+    rgb_config.data_gpio_nums[6] = LCD_IO_RGB_DATA6;
+    rgb_config.data_gpio_nums[7] = LCD_IO_RGB_DATA7;
+    rgb_config.data_gpio_nums[8] = LCD_IO_RGB_DATA8;
+    rgb_config.data_gpio_nums[9] = LCD_IO_RGB_DATA9;
+    rgb_config.data_gpio_nums[10] = LCD_IO_RGB_DATA10;
+    rgb_config.data_gpio_nums[11] = LCD_IO_RGB_DATA11;
+    rgb_config.data_gpio_nums[12] = LCD_IO_RGB_DATA12;
+    rgb_config.data_gpio_nums[13] = LCD_IO_RGB_DATA13;
+    rgb_config.data_gpio_nums[14] = LCD_IO_RGB_DATA14;
+    rgb_config.data_gpio_nums[15] = LCD_IO_RGB_DATA15;
+
+    rgb_config.timings.pclk_hz = 16 * 1000 * 1000;
+    rgb_config.timings.h_res = LCD_H_RES;
+    rgb_config.timings.v_res = LCD_V_RES;
+    rgb_config.timings.hsync_pulse_width = 10;
+    rgb_config.timings.hsync_back_porch = 10;
+    rgb_config.timings.hsync_front_porch = 20;
+    rgb_config.timings.vsync_pulse_width = 10;
+    rgb_config.timings.vsync_back_porch = 16;
+    rgb_config.timings.vsync_front_porch = 12;
+    rgb_config.timings.flags.pclk_active_neg = 1;
+
+    rgb_config.flags.fb_in_psram = 1;
+
+    st7701_vendor_config_t vendor_config = {};
+    vendor_config.rgb_config = &rgb_config;
+    vendor_config.init_cmds = lcd_init_cmds,
+    vendor_config.init_cmds_size = sizeof(lcd_init_cmds) / sizeof(lcd_init_cmds[0]),
+    vendor_config.flags.auto_del_panel_io = 0;  /**
+                                                 * Set to 1 if panel IO is no longer needed after LCD initialization.
+                                                 * If the panel IO pins are sharing other pins of the RGB interface to save GPIOs,
+                                                 * Please set it to 1 to release the pins.
+                                                 */
+    vendor_config.flags.mirror_by_cmd = 1;      // Set to 0 if `auto_del_panel_io` is enabled
+
+    esp_lcd_panel_dev_config_t panel_config = {};
+    panel_config.reset_gpio_num = LCD_IO_RST;
+    panel_config.rgb_ele_order = LCD_RGB_ELEMENT_ORDER_RGB;
+    panel_config.bits_per_pixel = LCD_BIT_PER_PIXEL;
+    panel_config.vendor_config = &vendor_config;
+
     ESP_ERROR_CHECK(esp_lcd_new_panel_st7701(io_handle, &panel_config, &lcd_handle));
     ESP_ERROR_CHECK(esp_lcd_panel_reset(lcd_handle));
     ESP_ERROR_CHECK(esp_lcd_panel_init(lcd_handle));
@@ -203,61 +205,101 @@ static void init_graphics(void)
     ESP_ERROR_CHECK(lvgl_port_init(&lvgl_cfg));
 
     // Add LCD screen
-    const lvgl_port_display_cfg_t disp_cfg = {
-        .panel_handle = lcd_handle,
-        .buffer_size = LCD_H_RES * LCD_V_RES,
-        .double_buffer = 0,
-        .hres = LCD_H_RES,
-        .vres = LCD_V_RES,
-        .monochrome = false,
+    lvgl_port_display_cfg_t disp_cfg = {};
+    disp_cfg.panel_handle = lcd_handle;
+    disp_cfg.buffer_size = LCD_H_RES * LCD_V_RES;
+    disp_cfg.double_buffer = 0;
+    disp_cfg.hres = LCD_H_RES;
+    disp_cfg.vres = LCD_V_RES;
+    disp_cfg.monochrome = false;
 #if LVGL_VERSION_MAJOR >= 9
-        .color_format = LV_COLOR_FORMAT_RGB565,
+    disp_cfg.color_format = LV_COLOR_FORMAT_RGB565;
 #endif
-        .rotation = {
-            .swap_xy = false,
-            .mirror_x = false,
-            .mirror_y = false,
-        },
-        .flags = {
-            .buff_dma = false,
-            .buff_spiram = false,
-            .direct_mode = true,
-#if LVGL_VERSION_MAJOR >= 9
-            .swap_bytes = false,
-#endif
-        }
-    };
-    const lvgl_port_display_rgb_cfg_t rgb_cfg = {
-        .flags = {
-            .bb_mode = false,
-            .avoid_tearing = true,
-        }
-    };
+    disp_cfg.flags.direct_mode = true;
+
+    lvgl_port_display_rgb_cfg_t rgb_cfg = {};
+    rgb_cfg.flags.avoid_tearing = true;
+
     assert(lvgl_port_add_disp_rgb(&disp_cfg, &rgb_cfg) != NULL);
 }
 
 
-static void display(void)
-{
-    static lv_style_t style;
-    lv_style_init(&style);
-    lv_style_set_bg_color(&style, lv_palette_main(LV_PALETTE_BLUE));
-    lv_style_set_border_color(&style, lv_palette_main(LV_PALETTE_PINK));
+#define ROLL_STEP 100
+#define PITCH_STEP 10
 
-    lv_obj_t *obj;
-    obj = lv_obj_create(lv_scr_act());
-    lv_obj_add_style(obj, &style, 0);
-    lv_obj_set_size(obj, LCD_H_RES, LCD_V_RES);
-    lv_obj_align(obj, LV_ALIGN_OUT_TOP_LEFT, 0, 0);
+static void my_timer(lv_timer_t * timer)
+{
+    display *disp = static_cast<display *>(lv_timer_get_user_data(timer));
+
+    static int16_t roll = 0;
+    static int16_t roll_step = ROLL_STEP;
+    static int16_t pitch = 0;
+    static int16_t pitch_step = PITCH_STEP;
+
+    disp->set_roll(roll);
+    if (roll >= 900) {
+        roll_step = -ROLL_STEP;
+    } else if (roll <= -900) {
+        roll_step = ROLL_STEP;
+    }
+    roll += roll_step;
+
+    disp->set_pitch(pitch);
+    if (pitch >= 200) {
+        pitch_step = -PITCH_STEP;
+    } else if (pitch <= -200) {
+        pitch_step = PITCH_STEP;
+    }
+    pitch += pitch_step;
 }
 
 
-void app_main(void)
+#include "lv_demos.h"
+
+extern "C" void app_main(void)
 {
+    //vTaskPrioritySet(NULL, 20);
+    ESP_LOGI(TAG, "Main task priority = %d", uxTaskPriorityGet(NULL));
+
     init_graphics();
 
-    assert(lvgl_port_lock(0) == true);
-    //display();
+#if 0
     lv_demo_music();
-    lvgl_port_unlock();
+#endif
+
+#if 1
+    display *disp = new display();
+
+#if 1
+    lv_timer_create(my_timer, 30, disp);
+#endif
+
+#if 0
+    int16_t roll = 0;
+    int16_t roll_step = ROLL_STEP;
+    int16_t pitch = 0;
+    int16_t pitch_step = PITCH_STEP;
+    while (true) {
+        disp->set_roll(roll);
+        if (roll >= 900) {
+            roll_step = -ROLL_STEP;
+        } else if (roll <= -900) {
+            roll_step = ROLL_STEP;
+        }
+        roll += roll_step;
+
+        disp->set_pitch(pitch);
+        if (pitch >= 200) {
+            pitch_step = -PITCH_STEP;
+        } else if (pitch <= -200) {
+            pitch_step = PITCH_STEP;
+        }
+        pitch += pitch_step;
+
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+#endif
+
+#endif
+
 }
