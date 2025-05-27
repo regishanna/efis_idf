@@ -20,7 +20,7 @@ static const char *TAG = "EFIS main";
 #define LCD_BIT_PER_PIXEL       (16)
 #define RGB_BIT_PER_PIXEL       (16)
 #define RGB_DATA_WIDTH          (16)
-#define RGB_BOUNCE_BUFFER_HEIGHT 20
+#define RGB_BOUNCE_BUFFER_HEIGHT (0)
 #define RGB_BOUNCE_BUFFER_SIZE  (LCD_H_RES * RGB_BOUNCE_BUFFER_HEIGHT)
 
 #define LCD_IO_SPI_CS           (GPIO_NUM_48)
@@ -165,7 +165,7 @@ static void init_graphics(void)
     rgb_config.data_gpio_nums[14] = LCD_IO_RGB_DATA14;
     rgb_config.data_gpio_nums[15] = LCD_IO_RGB_DATA15;
 
-    rgb_config.timings.pclk_hz = 16 * 1000 * 1000;
+    rgb_config.timings.pclk_hz = 14 * 1000 * 1000;
     rgb_config.timings.h_res = LCD_H_RES;
     rgb_config.timings.v_res = LCD_V_RES;
     rgb_config.timings.hsync_pulse_width = 10;
@@ -224,8 +224,8 @@ static void init_graphics(void)
 }
 
 
-#define ROLL_STEP 100
-#define PITCH_STEP 10
+#define ROLL_STEP 5
+#define PITCH_STEP 1
 
 static void my_timer(lv_timer_t * timer)
 {
