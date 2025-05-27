@@ -236,7 +236,8 @@ static void my_timer(lv_timer_t * timer)
     static int16_t pitch = 0;
     static int16_t pitch_step = PITCH_STEP;
 
-    disp->set_roll(roll);
+    disp->set_attitude(roll, pitch);
+
     if (roll >= 900) {
         roll_step = -ROLL_STEP;
     } else if (roll <= -900) {
@@ -244,7 +245,6 @@ static void my_timer(lv_timer_t * timer)
     }
     roll += roll_step;
 
-    disp->set_pitch(pitch);
     if (pitch >= 200) {
         pitch_step = -PITCH_STEP;
     } else if (pitch <= -200) {
@@ -254,52 +254,16 @@ static void my_timer(lv_timer_t * timer)
 }
 
 
-#include "lv_demos.h"
-
 extern "C" void app_main(void)
 {
-    //vTaskPrioritySet(NULL, 20);
     ESP_LOGI(TAG, "Main task priority = %d", uxTaskPriorityGet(NULL));
 
     init_graphics();
 
-#if 0
-    lv_demo_music();
-#endif
-
-#if 1
     display *disp = new display();
 
 #if 1
     lv_timer_create(my_timer, 30, disp);
-#endif
-
-#if 0
-    int16_t roll = 0;
-    int16_t roll_step = ROLL_STEP;
-    int16_t pitch = 0;
-    int16_t pitch_step = PITCH_STEP;
-    while (true) {
-        disp->set_roll(roll);
-        if (roll >= 900) {
-            roll_step = -ROLL_STEP;
-        } else if (roll <= -900) {
-            roll_step = ROLL_STEP;
-        }
-        roll += roll_step;
-
-        disp->set_pitch(pitch);
-        if (pitch >= 200) {
-            pitch_step = -PITCH_STEP;
-        } else if (pitch <= -200) {
-            pitch_step = PITCH_STEP;
-        }
-        pitch += pitch_step;
-
-        vTaskDelay(pdMS_TO_TICKS(10));
-    }
-#endif
-
 #endif
 
 }
