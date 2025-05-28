@@ -5,6 +5,9 @@
 #include <math.h>
 
 
+#define FULL_HEIGHT_PITCH_D10 500   // Full height pitch in tenths of degrees
+
+
 display::display(void)
 {
     assert(lvgl_port_lock(0) == true);
@@ -44,21 +47,77 @@ lv_img_dsc_t *display::create_static_horizon_img(void)
     lv_layer_t layer;
     lv_canvas_init_layer(canvas, &layer);
 
-    // Caracteristics of rectangles
-    lv_draw_rect_dsc_t rect_dsc;
-    lv_draw_rect_dsc_init(&rect_dsc);
-    rect_dsc.radius = 0;
-    rect_dsc.border_width = 0;
+    // Draw earth and sky
+    {
+        // Caracteristics of rectangles
+        lv_draw_rect_dsc_t rect_dsc;
+        lv_draw_rect_dsc_init(&rect_dsc);
+        rect_dsc.radius = 0;
+        rect_dsc.border_width = 0;
 
-    // Draw the sky
-    rect_dsc.bg_color = lv_palette_main(LV_PALETTE_LIGHT_BLUE);
-    lv_area_t coords_sky = {0, 0, width - 1, (height / 2) - 1};
-    lv_draw_rect(&layer, &rect_dsc, &coords_sky);
+        // Draw the sky
+        rect_dsc.bg_color = lv_palette_main(LV_PALETTE_LIGHT_BLUE);
+        lv_area_t coords_sky = {0, 0, width - 1, (height / 2) - 1};
+        lv_draw_rect(&layer, &rect_dsc, &coords_sky);
 
-    // Draw the earth
-    rect_dsc.bg_color = lv_palette_main(LV_PALETTE_BROWN);
-    lv_area_t coords_earth = {0, height / 2, width - 1, height - 1};
-    lv_draw_rect(&layer, &rect_dsc, &coords_earth);
+        // Draw the earth
+        rect_dsc.bg_color = lv_palette_main(LV_PALETTE_BROWN);
+        lv_area_t coords_earth = {0, height / 2, width - 1, height - 1};
+        lv_draw_rect(&layer, &rect_dsc, &coords_earth);
+    }
+
+    // Draw pitch lines
+    {
+        lv_draw_rect_dsc_t line_dsc;
+        lv_draw_rect_dsc_init(&line_dsc);
+        line_dsc.bg_color = lv_color_white();
+    
+        lv_draw_label_dsc_t label_dsc;
+        lv_draw_label_dsc_init(&label_dsc);
+        label_dsc.color = lv_color_white();
+        label_dsc.text_local = 1;
+        label_dsc.font = &lv_font_montserrat_18;
+
+        int32_t font_half_height = lv_font_get_line_height(label_dsc.font) / 2;
+        int32_t label_x_spacing = 15;   // Spacing between the pitch line and the label text
+    
+        const int cx = width / 2;
+        const int cy = height / 2;
+        const int pitch_step_d10 = 25; // Pitch step in tenths of degrees
+        const int pitch_step_px = pitch_step_d10 * lv_obj_get_height(screen) / FULL_HEIGHT_PITCH_D10;
+        const int max_pitch_d10 = 500;
+    
+        for (int angle_d10 = -max_pitch_d10; angle_d10 <= max_pitch_d10; angle_d10 += pitch_step_d10) {
+            int y = cy - (angle_d10 * pitch_step_px) / pitch_step_d10;
+            if (y < 0 || y >= height) continue;
+    
+            int len = (angle_d10 % (4 * pitch_step_d10) == 0) ? 40 :
+                (angle_d10 % (2 * pitch_step_d10) == 0) ? 20 : 10;
+    
+            // Lines (not for 0 pitch)
+            if (angle_d10 != 0) {
+                lv_area_t coords_line = {cx - len, y - 1, cx + len, y};
+                lv_draw_rect(&layer, &line_dsc, &coords_line);
+            }
+
+            // Numbers (only for multiples of 4 pitch steps but not 0)
+            if ((angle_d10 != 0) && (angle_d10 % (4 * pitch_step_d10) == 0)) {
+                char txt[8];
+                snprintf(txt, sizeof(txt), "%d", abs(angle_d10) / 10);
+                label_dsc.text = txt;
+                
+                // Right number
+                label_dsc.align = LV_TEXT_ALIGN_LEFT;
+                lv_area_t coords_text_right = {cx + len + label_x_spacing, y - font_half_height, width, y + font_half_height};
+                lv_draw_label(&layer, &label_dsc, &coords_text_right);
+
+                // Left number
+                label_dsc.align = LV_TEXT_ALIGN_RIGHT;
+                lv_area_t coords_text_left = {0, y - font_half_height, cx - len - label_x_spacing, y + font_half_height};
+                lv_draw_label(&layer, &label_dsc, &coords_text_left);
+            }
+        }
+    }
 
     lv_canvas_finish_layer(canvas, &layer);
 
@@ -80,8 +139,8 @@ void display::render_horizon(lv_obj_t *canvas, const lv_img_dsc_t *src_img, int1
     const int sx = img_w / 2;
     const int sy = img_h / 2;
 
-    const int pitch_d10_full = 300;     // Full scale pitch in tenths of degrees
-    const int pitch_px = pitch_d10 * cy / pitch_d10_full;   // Convert pitch from tenths of degrees to pixels
+    // Convert pitch from tenths of degrees to pixels
+    const int pitch_px = pitch_d10 * canvas_h / FULL_HEIGHT_PITCH_D10;
 
     // Get source and destination buffers
     lv_color16_t *dst_buf = (lv_color16_t *)lv_canvas_get_buf(canvas);
